@@ -1,0 +1,39 @@
+name: Screenshotter
+on:
+   push:
+    branches:
+      - main  # Adjust the branch name if needed
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checking out repository
+        uses: actions/checkout@v4
+
+      - name: Setting up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Removing previous chrome instances on runner
+        run: |
+        sudo apt remove --purge google-chrome-stable
+        sudo apt autoclean
+        sudo apt autoremove
+
+      - name: Installing dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install xvfb
+        run: sudo apt-get install xvfb
+
+      - name: Running the Python script
+        run: python scrapper.py
+        env:
+          WEB_URL: ${{ secrets.WEB_URL }}
+          WEB_USERNAME: ${{ secrets.WEB_USERNAME }}
+          WEB_PASSWORD: ${{ secrets.WEB_PASSWORD }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
