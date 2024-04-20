@@ -1,8 +1,7 @@
 name: Screenshotter
 on:
-   push:
-    branches:
-      - main  # Adjust the branch name if needed
+  schedule:
+    - cron: '0 9 * * *'  # Run the job daily at 09:00 AM UTC
 
 jobs:
   scrape:
