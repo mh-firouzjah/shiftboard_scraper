@@ -19,9 +19,9 @@ jobs:
 
       - name: Removing previous chrome instances on runner
         run: |
-        sudo apt remove --purge google-chrome-stable
-        sudo apt autoclean
-        sudo apt autoremove
+          sudo apt remove --purge google-chrome-stable
+          sudo apt autoclean
+          sudo apt autoremove
 
       - name: Installing dependencies
         run: pip install -r requirements.txt
