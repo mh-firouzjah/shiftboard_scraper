@@ -125,6 +125,7 @@ def login_and_capture_screenshot(username, password, url, logout_url, screenshot
 
 
 async def send_screenshot(screenshot_path):
+    if not os.path.exists(screenshot_path): return 
     bot = Bot(token=TELEGRAM_BOT_TOKEN)
     try:
         # Send the screenshot via Telegram bot
