@@ -3,6 +3,7 @@ import os
 import time
 
 import chromedriver_autoinstaller
+import jdatetime
 from decouple import config
 from pyvirtualdisplay import Display
 from selenium import webdriver
@@ -74,8 +75,29 @@ def login_and_capture_screenshot(username, password, url, logout_url, screenshot
             EC.element_to_be_clickable((By.CSS_SELECTOR, f'a[href="{logout_url}"]'))
         )  # An element ID that appears after login
 
-        # Find all elements with the attribute data-target="#user_view_general_modal"
-        modal_links = driver.find_elements(By.CSS_SELECTOR, '[data-target="#user_view_general_modal"]')
+        # Find all span with the attribute class="panel-title"
+        day_of_month = driver.find_elements(By.CLASS_NAME, "panel-title")
+
+        for element in day_of_month:
+            try:
+                # Parse the date from the element text
+                shift_date = jdatetime.datetime.strptime(element.text.strip(), "%Y-%m-%d").date()
+            except ValueError:
+                continue  # Skip if the date parsing fails
+
+            # Calculate the date for tomorrow
+            tomorrow_date = jdatetime.datetime.today().date() + jdatetime.timedelta(days=1)
+
+            # Check if the parsed date is tomorrow's date
+            if shift_date == tomorrow_date:
+                # Navigate to the sibling element (the <a> tag) within the parent
+                table_data = element.find_element(By.XPATH, ".//ancestor::td")
+
+                modal_links = table_data.find_elements(
+                    By.CSS_SELECTOR, '[data-target="#user_view_general_modal"]'
+                )
+
+                break  # Stop after finding the correct link
 
         # Find the link and click on it
         if modal_links:
