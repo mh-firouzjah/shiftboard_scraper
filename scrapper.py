@@ -100,8 +100,10 @@ def login_and_capture_screenshot(username, password, url, logout_url, screenshot
                 break  # Stop after finding the correct link
 
         # Find the link and click on it
-        if modal_links:
-            modal_links[0].click()
+        if not modal_links:
+            return
+
+        modal_links[0].click()
 
         def wait_for_ajax(driver):
             return (
