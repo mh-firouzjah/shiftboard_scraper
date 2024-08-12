@@ -1,4 +1,4 @@
-name: Screenshotter
+name: Scrapper
 on:
   schedule:
     - cron: '0 9 * * *'  # Run the job daily at 09:00 AM UTC
@@ -16,23 +16,23 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Removing previous chrome instances on runner
-        run: |
-          sudo apt remove --purge google-chrome-stable
-          sudo apt autoclean
-          sudo apt autoremove
-
       - name: Installing dependencies
         run: pip install -r requirements.txt
-
-      - name: Install xvfb
-        run: sudo apt-get install xvfb
 
       - name: Running the Python script
         run: python scrapper.py
         env:
-          WEB_URL: ${{ secrets.WEB_URL }}
-          WEB_USERNAME: ${{ secrets.WEB_USERNAME }}
-          WEB_PASSWORD: ${{ secrets.WEB_PASSWORD }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SHIFTBOARD_USERNAME: ${{ secrets.SHIFTBOARD_USERNAME }}
+          SHIFTBOARD_PASSWORD: ${{ secrets.SHIFTBOARD_PASSWORD }}
+          MY_TELEGRAM_CHAT_ID: ${{ secrets.MY_TELEGRAM_CHAT_ID }}
+          TELEGRAMBOT_TOKEN: ${{ secrets.TELEGRAMBOT_TOKEN }}
+          SHIFTBOARD_LOGIN_URL: ${{ secrets.SHIFTBOARD_LOGIN_URL }}
+
+      - name: Push updated file
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: "Github Actions"
+          author_email: "actions@github.com"
+          message: "Updated 🥳"
+          add: "."
+          push: "https://github.com/mh-firouzjah/shiftboard_scrapper.git"

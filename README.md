@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project is a simple automation script that utilizes Selenium to capture a screenshot of a specified website. It first logs into the specified account, navigates to the desired page, captures the screenshot, and then sends it to a designated Telegram chat using the Python-telegram-bot package.
+This project is a simple automation script that logins to a website and reads some data from it then paste the important parts to my telegram chat.
 
 ## Features
 
@@ -15,7 +15,7 @@ This project is a simple automation script that utilizes Selenium to capture a s
 Before running the script, make sure you have the following:
 
 - Python installed on your system
-- Necessary Python packages installed (Selenium, python-telegram-bot, chromedriver-autoinstaller, python-decouple)
+- Necessary Python packages installed (python-telegram-bot, beautifulsoup4, python-decouple, jdatetime, flask)
 - Telegram Bot API token and chat ID for sending screenshots to Telegram
 - Properly configured GitHub Actions workflow if you plan to use it as an automated task
 
@@ -46,7 +46,7 @@ Before running the script, make sure you have the following:
 - To set up the script as a scheduled task using GitHub Actions, create a workflow file in the `.github/workflows` directory of your repository. Here's an example workflow file:
 
 ```yaml
-name: Screenshotter
+name: Scrapper
 
 on:
   schedule:
@@ -72,11 +72,11 @@ jobs:
       - name: Run screenshot script
         run: python scrapper.py
         env:
-          WEB_URL: ${{ secrets.WEB_URL }}
-          WEB_USERNAME: ${{ secrets.WEB_USERNAME }}
-          WEB_PASSWORD: ${{ secrets.WEB_PASSWORD }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SHIFTBOARD_USERNAME: ${{ secrets.SHIFTBOARD_USERNAME }}
+          SHIFTBOARD_PASSWORD: ${{ secrets.SHIFTBOARD_PASSWORD }}
+          MY_TELEGRAM_CHAT_ID: ${{ secrets.MY_TELEGRAM_CHAT_ID }}
+          TELEGRAMBOT_TOKEN: ${{ secrets.TELEGRAMBOT_TOKEN }}
+          SHIFTBOARD_LOGIN_URL: ${{ secrets.SHIFTBOARD_LOGIN_URL }}
 ```
 
 Replace the `${{ secrets.SECRET_NAME }}` placeholders with your actual secrets stored in GitHub Secrets.

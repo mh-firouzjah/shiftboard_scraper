@@ -1,8 +1,5 @@
-asyncio~=3.4.3
-chromedriver-autoinstaller~=0.6.4
-jdatetime~=5.0.0
-pillow~=10.3.0
+flask~=3.0.3
+python-telegram-bot~=21.4
 python-decouple~=3.8
-python-telegram-bot~=21.1.1
-PyVirtualDisplay~=3.0
-selenium~=4.19.0
+jdatetime~=5.0.0
+beautifulsoup4~=4.12.3

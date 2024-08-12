@@ -1,146 +1,125 @@
 import asyncio
-import os
-import time
+from pathlib import Path
 
-import chromedriver_autoinstaller
+import aiohttp
 import jdatetime
+import telegram
+from bs4 import BeautifulSoup
 from decouple import config
-from pyvirtualdisplay import Display
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
-from telegram import Bot
 
-display = Display(visible=0, size=(1200, 1200))
-display.start()
-
-URL = config("WEB_URL")
-LOGOUT_URL = URL + "logout"
-USERNAME = config("WEB_USERNAME")
-PASSWORD = config("WEB_PASSWORD")
-TELEGRAM_BOT_TOKEN = config("TELEGRAM_BOT_TOKEN")
-TELEGRAM_CHAT_ID = config("TELEGRAM_CHAT_ID")
-
-# Check if the current version of chromedriver exists
-# and if it doesn't exist, download it automatically,
-# then add chromedriver to path
-chromedriver_autoinstaller.install()
+SHIFTBOARD_USERNAME = config("SHIFTBOARD_USERNAME")
+SHIFTBOARD_PASSWORD = config("SHIFTBOARD_PASSWORD")
+MY_TELEGRAM_CHAT_ID = config("MY_TELEGRAM_CHAT_ID")
+TELEGRAMBOT_TOKEN = config("TELEGRAMBOT_TOKEN")
+SHIFTBOARD_LOGIN_URL = config("SHIFTBOARD_LOGIN_URL")
 
 
-def login_and_capture_screenshot(username, password, url, logout_url, screenshot_path):
-    # Instantiate ChromeOptions
-    chrome_options = webdriver.ChromeOptions()
+# Get text content while keeping spaces and dashes
+def get_readable_text(element):
+    # Extract all text parts with spaces
+    return [content.get_text(strip=True) for content in element.contents]
 
-    # Add necessary options
-    options = [
-        "--window-size=2000,1600",
-        "--ignore-certificate-errors",
-        # "--headless",
-        # "--disable-gpu",
-        # "--no-sandbox",
-        # "--disable-dev-shm-usage",
-        # "--remote-debugging-port=9222"
-    ]
 
-    # Add options to ChromeOptions
-    for option in options:
-        chrome_options.add_argument(option)
+def latin_to_persian(text):
+    # Mapping of Latin numerals to Persian numerals
+    latin_to_persian_map = str.maketrans("0123456789", "۰۱۲۳۴۵۶۷۸۹")
+    # Translate the text using the map
+    return text.translate(latin_to_persian_map)
 
-    # Define device emulation parameters
-    device_emulation = {
-        # "deviceName": "Surface Pro 7",
-        "deviceMetrics": {"width": 912, "height": 1368, "pixelRatio": 3.0},
-        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36",
+
+async def get_new_shiftboard(session):
+    # Fetch the login page
+    async with session.get(SHIFTBOARD_LOGIN_URL) as response:
+        login_page = await response.text()
+
+    # Parse the login page HTML to extract the CSRF token
+    soup = BeautifulSoup(login_page, "html.parser")
+    csrf_token = soup.find("input", {"name": "_token"})["value"]
+
+    # Login payload including CSRF token
+    payload = {
+        "name": SHIFTBOARD_USERNAME,
+        "password": SHIFTBOARD_PASSWORD,
+        "_token": csrf_token,  # Include the CSRF token in the payload
     }
 
-    # Add mobile emulation option
-    chrome_options.add_experimental_option("mobileEmulation", device_emulation)
+    # Headers including CSRF token
+    headers = {"X-XSRF-TOKEN": csrf_token}
 
-    # Instantiate WebDriver with ChromeOptions
-    driver = webdriver.Chrome(options=chrome_options)
+    # Send a POST request to login with the CSRF token and session cookie
+    async with session.post(SHIFTBOARD_LOGIN_URL, data=payload, headers=headers) as response:
+        response_content = await response.text()
+
+    soup = BeautifulSoup(response_content, "html.parser")
+
+    today = jdatetime.datetime.today().date()
+    remained_shifts = []
+
+    if soup:
+        for td_element in soup.find_all("td"):
+            for date_span in td_element.find_all("span", class_="panel-title"):
+                try:
+                    # Parse the date from the element text
+                    date = jdatetime.datetime.strptime(date_span.get_text(strip=True), "%Y-%m-%d").date()
+                except ValueError:
+                    continue  # Skip if the date parsing fails
+
+                # Calculate the date for tomorrow
+                if (
+                    date > today
+                    and (anchors := td_element.find_all("a"))
+                    and any(
+                        True for anchor in anchors if anchor.get_text(strip=True) in ("شیفت شب", "شیفت روز")
+                    )
+                ):
+                    remained_shifts.append((date, td_element))
+
+    nearest_shift = sorted(remained_shifts, key=lambda tp: tp[0])[0][1]
+
+    # Extract all spans with class "panel-title"
+    panel_titles = nearest_shift.find_all("span", class_="panel-title")
+    panel_titles_text = [title.get_text(strip=True) for title in panel_titles]
+
+    # Extract information within the specific div
+    target_div = nearest_shift.find("div", class_="panel border-top-xlg border-top-green alpha-green")
+
+    # Replace <i class="icon-dash"></i> with a dash (-)
+    for icon in target_div.find_all("i", class_="icon-dash"):
+        icon.replace_with(" - ")
+
+    finial_text = [string for string in panel_titles_text + get_readable_text(target_div) if string]
+    date = "-".join(f"{string.rjust(2,'۰')}" for string in latin_to_persian(finial_text[2]).split("-")[::-1])
+    return (
+        f"<b>{finial_text[0]} {finial_text[1]} {date}</b>"
+        f"\n<blockquote><b>{' '.join(finial_text[5:8])}  {finial_text[4]}</b></blockquote>"
+        f"\n<blockquote><b>{' '.join(finial_text[9:])}  {finial_text[8]}</b></blockquote>"
+    )
+
+
+async def main():
+    shiftboard_path = Path("shiftboard.txt")
+
+    async with aiohttp.ClientSession() as session:
+        new_board = await get_new_shiftboard(session)
 
     try:
-        driver.get(url)
-        # Find and fill in username and password fields
-        username_field = driver.find_element(By.ID, "name")
-        password_field = driver.find_element(By.ID, "password")
-        username_field.send_keys(username)
-        password_field.send_keys(password)
-        password_field.send_keys(Keys.RETURN)
+        # Compare the new board with the existing one
+        old_board = shiftboard_path.read_text()
+        file_not_found = False
+    except FileNotFoundError:
+        file_not_found = True
 
-        # Wait for page to load after login
-        WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, f'a[href="{logout_url}"]'))
-        )  # An element ID that appears after login
+    if file_not_found or new_board != old_board:
+        # Update the shiftboard file with the new board data
+        shiftboard_path.write_text(new_board)
 
-        # Find all span with the attribute class="panel-title"
-        day_of_month = driver.find_elements(By.CLASS_NAME, "panel-title")
+        # Initialize telegram bot
+        bot = telegram.Bot(token=TELEGRAMBOT_TOKEN)
 
-        for element in day_of_month:
-            try:
-                # Parse the date from the element text
-                shift_date = jdatetime.datetime.strptime(element.text.strip(), "%Y-%m-%d").date()
-            except ValueError:
-                continue  # Skip if the date parsing fails
-
-            # Calculate the date for tomorrow
-            tomorrow_date = jdatetime.datetime.today().date() + jdatetime.timedelta(days=1)
-
-            # Check if the parsed date is tomorrow's date
-            if shift_date == tomorrow_date:
-                # Navigate to the sibling element (the <a> tag) within the parent
-                table_data = element.find_element(By.XPATH, ".//ancestor::td")
-
-                modal_links = table_data.find_elements(
-                    By.CSS_SELECTOR, '[data-target="#user_view_general_modal"]'
-                )
-
-                break  # Stop after finding the correct link
-
-        # Find the link and click on it
-        if not modal_links:
-            return
-
-        modal_links[0].click()
-
-        def wait_for_ajax(driver):
-            return (
-                driver.find_element(By.ID, "user_view_general_modal_body")
-                .get_attribute("class")
-                .find("text-center")
-            ) == -1
-
-        # Wait for modal to appear
-        WebDriverWait(driver, 30).until(wait_for_ajax)  # An element ID that appears in the modal
-
-        # Add a short sleep duration to ensure UI updates have finished rendering
-        time.sleep(2)
-
-        # Take screenshot of the modal
-        driver.save_screenshot(screenshot_path)
-
-    finally:
-        # Close the browser session
-        driver.quit()
+        # Send the new board data to Telegram
+        async with bot:
+            await bot.send_message(chat_id=MY_TELEGRAM_CHAT_ID, text=new_board, parse_mode="HTML")
 
 
-async def send_screenshot(screenshot_path):
-    if not os.path.exists(screenshot_path): return 
-    bot = Bot(token=TELEGRAM_BOT_TOKEN)
-    try:
-        # Send the screenshot via Telegram bot
-        await bot.send_photo(TELEGRAM_CHAT_ID, open(screenshot_path, "rb"))
-    except:
-        pass
-    finally:
-        # Remove the screenshot file after sending
-        os.remove(screenshot_path)
-
-
-screenshot_path = "./screenshot.png"
 if __name__ == "__main__":
-    login_and_capture_screenshot(USERNAME, PASSWORD, URL, LOGOUT_URL, screenshot_path)
-    asyncio.run(send_screenshot(screenshot_path))
-    display.stop()
+    asyncio.run(main())
