@@ -74,7 +74,9 @@ async def get_new_shiftboard(session):
                     )
                 ):
                     remained_shifts.append((date, td_element))
-
+    
+    if not remained_shifts:
+        return
     nearest_shift = sorted(remained_shifts, key=lambda tp: tp[0])[0][1]
 
     # Extract all spans with class "panel-title"
@@ -102,6 +104,8 @@ async def main():
 
     async with aiohttp.ClientSession() as session:
         new_board = await get_new_shiftboard(session)
+        if not new_board:
+            return
 
     try:
         # Compare the new board with the existing one
