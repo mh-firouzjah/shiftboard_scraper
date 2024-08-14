@@ -67,9 +67,9 @@ async def get_new_shiftboard(session):
                 # Calculate the date for tomorrow
                 if (
                     date > today
-                    and (anchors := td_element.find_all("a"))
                     and any(
-                        True for anchor in anchors if anchor.get_text(strip=True) in ("شیفت شب", "شیفت روز")
+                        True for anchor in td_element.find_all("a")
+                        if anchor.get_text(strip=True) in ("شیفت شب", "شیفت روز")
                     )
                 ):
                     remained_shifts.append((date, td_element))
