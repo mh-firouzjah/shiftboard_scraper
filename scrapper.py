@@ -67,6 +67,7 @@ async def get_new_shiftboard(session):
                 # Calculate the date for tomorrow
                 if (
                     date > today
+                    and not td_element.find(string="موقعیت ها در وضعیت پیش نویس هستند.")
                     and any(
                         True for anchor in td_element.find_all("a")
                         if anchor.get_text(strip=True) in ("شیفت شب", "شیفت روز")
