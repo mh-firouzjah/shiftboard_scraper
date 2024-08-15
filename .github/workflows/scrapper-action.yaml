@@ -3,7 +3,7 @@ on:
   push:
   schedule:
     - cron: '0 9 * * *'  # Run the job daily at 09:00 AM UTC
-    
+
 jobs:
   scrape:
     runs-on: ubuntu-latest
@@ -32,8 +32,5 @@ jobs:
       - name: Push updated file
         uses: EndBug/add-and-commit@v9
         with:
-          author_name: "Github Actions"
-          author_email: "actions@github.com"
-          message: "Updated 🥳"
-          add: "."
-          push: "https://github.com/mh-firouzjah/shiftboard_scrapper.git"
+          committer_name: GitHub Actions
+          committer_email: actions@github.com
