@@ -3,3 +3,4 @@ python-decouple~=3.8
 jdatetime~=5.0.0
 beautifulsoup4~=4.12.3
 aiohttp[speedups]~=3.10.3
+pycryptodome~=3.20.0

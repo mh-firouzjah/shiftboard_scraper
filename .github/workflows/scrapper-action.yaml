@@ -28,6 +28,8 @@ jobs:
           MY_TELEGRAM_CHAT_ID: ${{ secrets.MY_TELEGRAM_CHAT_ID }}
           TELEGRAMBOT_TOKEN: ${{ secrets.TELEGRAMBOT_TOKEN }}
           SHIFTBOARD_LOGIN_URL: ${{ secrets.SHIFTBOARD_LOGIN_URL }}
+          THE_AES_KEY: ${{ secrets.THE_AES_KEY }}
+          THE_AES_IV: ${{ secrets.THE_AES_IV }}
 
       - name: Push updated file
         uses: EndBug/add-and-commit@v9
