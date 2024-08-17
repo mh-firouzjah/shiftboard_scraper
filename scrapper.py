@@ -22,7 +22,6 @@ AES_IV = config("THE_AES_IV").encode()  # Ensure your AES IV is 16 bytes long
 
 # AES Encryption
 def encrypt_text(text, key, iv):
-    print(key, iv, len(key), len(iv))
     cipher = AES.new(key, AES.MODE_CBC, iv)
     ct_bytes = cipher.encrypt(pad(text.encode(), AES.block_size))
     return base64.b64encode(iv + ct_bytes).decode("utf-8")
