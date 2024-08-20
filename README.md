@@ -24,7 +24,7 @@ Before running the script, make sure you have the following:
 1. Clone the repository to your local machine:
 
     ```bash
-    git clone https://github.com/mh-firouzjah/shiftboard_scrapper.git>
+    git clone https://github.com/mh-firouzjah/shiftboard_scraper.git>
     ```
 
 2. Install the required Python packages:
@@ -40,13 +40,13 @@ Before running the script, make sure you have the following:
 - To capture a screenshot manually, run the following command:
 
     ```bash
-    python scrapper.py
+    python scraper.py
     ```
 
 - To set up the script as a scheduled task using GitHub Actions, create a workflow file in the `.github/workflows` directory of your repository. Here's an example workflow file:
 
 ```yaml
-name: Scrapper
+name: scraper
 
 on:
   schedule:
@@ -70,7 +70,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run screenshot script
-        run: python scrapper.py
+        run: python scraper.py
         env:
           SHIFTBOARD_USERNAME: ${{ secrets.SHIFTBOARD_USERNAME }}
           SHIFTBOARD_PASSWORD: ${{ secrets.SHIFTBOARD_PASSWORD }}

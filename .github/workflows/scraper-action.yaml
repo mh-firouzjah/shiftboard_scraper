@@ -1,4 +1,4 @@
-name: Scrapper
+name: scraper
 on:
   push:
   schedule:
@@ -21,7 +21,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Running the Python script
-        run: python scrapper.py
+        run: python scraper.py
         env:
           SHIFTBOARD_USERNAME: ${{ secrets.SHIFTBOARD_USERNAME }}
           SHIFTBOARD_PASSWORD: ${{ secrets.SHIFTBOARD_PASSWORD }}
