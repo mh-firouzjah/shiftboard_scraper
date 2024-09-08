@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import logging
 from pathlib import Path
 
 import aiohttp
@@ -19,6 +20,17 @@ SHIFTBOARD_LOGIN_URL = config("SHIFTBOARD_LOGIN_URL")
 AES_KEY = config("THE_AES_KEY").encode()  # Ensure your AES key is 16, 24, or 32 bytes long
 AES_IV = config("THE_AES_IV").encode()  # Ensure your AES IV is 16 bytes long
 
+# Basic configuration for logging
+logging.basicConfig(
+    level=logging.INFO,  # Set the logging level to INFO
+    format='%(asctime)s - %(levelname)s - %(message)s',  # Custom log format
+    handlers=[
+        logging.FileHandler('app.log'),  # Log to a file
+        logging.StreamHandler()  # Log to the console
+    ]
+)
+
+logger = logging.getLogger(__name__)
 
 # AES Encryption
 def encrypt_text(text, key, iv):
@@ -49,6 +61,7 @@ def latin_to_persian(text):
 async def get_new_shiftboard(session):
     async with session.get(SHIFTBOARD_LOGIN_URL) as response:
         login_page = await response.text()
+        logger.info("Shiftboard get login page responsed: %d", await response.status)
 
     soup = BeautifulSoup(login_page, "html.parser")
     csrf_token = soup.find("input", {"name": "_token"})["value"]
@@ -63,6 +76,7 @@ async def get_new_shiftboard(session):
 
     async with session.post(SHIFTBOARD_LOGIN_URL, data=payload, headers=headers) as response:
         response_content = await response.text()
+        logger.info("Shiftboard login process responsed: %d", await response.status)
 
     soup = BeautifulSoup(response_content, "html.parser")
 
@@ -88,6 +102,8 @@ async def get_new_shiftboard(session):
                 ):
                     remained_shifts.append((date, td_element))
 
+    logger.info("Shiftboard had %d shifts in total.", len(remained_shifts))
+    
     if not remained_shifts:
         return None
     nearest_shift = sorted(remained_shifts, key=lambda tp: tp[0])[0][1]
@@ -102,12 +118,12 @@ async def get_new_shiftboard(session):
 
     finial_text = [string for string in panel_titles_text + get_readable_text(target_div) if string]
     date = "-".join(f"{string.rjust(2,'۰')}" for string in latin_to_persian(finial_text[2]).split("-")[::-1])
-    return (
+    
+    msg = (
         f"<b>{finial_text[0]} {finial_text[1]} {date}</b>"
         f"\n<blockquote><b>{' '.join(finial_text[5:8])}  {finial_text[4]}</b></blockquote>"
         f"\n<blockquote><b>{' '.join(finial_text[9:])}  {finial_text[8]}</b></blockquote>"
     )
-
 
 async def main():
     shiftboard_path = Path("shiftboard.txt")
@@ -136,6 +152,10 @@ async def main():
         # Send the new board data to Telegram
         async with bot:
             await bot.send_message(chat_id=MY_TELEGRAM_CHAT_ID, text=new_board, parse_mode="HTML")
+            logger.info("Message has been sent:\n", BeautifulSoup(new_board, "html.parser").get_text())
+
+    else:
+        logger.info("Shiftboard doesn't have new shift.")
 
 
 if __name__ == "__main__":
