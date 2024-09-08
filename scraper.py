@@ -61,7 +61,7 @@ def latin_to_persian(text):
 async def get_new_shiftboard(session):
     async with session.get(SHIFTBOARD_LOGIN_URL) as response:
         login_page = await response.text()
-        logger.info("Shiftboard get login page responsed: %d", await response.status)
+        logger.info("Shiftboard get login page responsed: %d", response.status)
 
     soup = BeautifulSoup(login_page, "html.parser")
     csrf_token = soup.find("input", {"name": "_token"})["value"]
@@ -76,7 +76,7 @@ async def get_new_shiftboard(session):
 
     async with session.post(SHIFTBOARD_LOGIN_URL, data=payload, headers=headers) as response:
         response_content = await response.text()
-        logger.info("Shiftboard login process responsed: %d", await response.status)
+        logger.info("Shiftboard login process responsed: %d", response.status)
 
     soup = BeautifulSoup(response_content, "html.parser")
 
@@ -119,7 +119,7 @@ async def get_new_shiftboard(session):
     finial_text = [string for string in panel_titles_text + get_readable_text(target_div) if string]
     date = "-".join(f"{string.rjust(2,'۰')}" for string in latin_to_persian(finial_text[2]).split("-")[::-1])
     
-    msg = (
+    return (
         f"<b>{finial_text[0]} {finial_text[1]} {date}</b>"
         f"\n<blockquote><b>{' '.join(finial_text[5:8])}  {finial_text[4]}</b></blockquote>"
         f"\n<blockquote><b>{' '.join(finial_text[9:])}  {finial_text[8]}</b></blockquote>"
